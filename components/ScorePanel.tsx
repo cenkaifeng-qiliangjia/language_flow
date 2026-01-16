@@ -38,7 +38,7 @@ export default function ScorePanel({ data, onRetry, onNew }: ScorePanelProps) {
               <span className="w-1 h-6 bg-blue-600 rounded-full"></span>
               评价
             </h3>
-            <div className={`bg-gray-50 rounded-2xl p-6 border border-gray-100 font-medium ${getScoreColor(data.score)}`}>
+            <div className={`bg-gray-50 rounded-2xl p-6 border border-gray-100 font-medium whitespace-pre-wrap ${getScoreColor(data.score)}`}>
               {data.judge}
             </div>
           </div>
@@ -49,7 +49,7 @@ export default function ScorePanel({ data, onRetry, onNew }: ScorePanelProps) {
               改进建议
             </h3>
             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {data.proposal}
               </p>
             </div>

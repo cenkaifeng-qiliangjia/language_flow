@@ -48,28 +48,31 @@ export default function PracticePage() {
     setState('SCORING');
     setError(null);
     try {
-      // 将 Blob 转为 Base64 传输给 API
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(',')[1];
-        
-        const res = await fetch('/api/score', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            audio: base64Audio,
-            targetText: transData?.english_text 
-          }),
-        });
-        
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        
-        setScoreData(data);
-        setState('RESULT');
-      };
+      // 检查 transData 是否存在以及是否有 english_text (或 format_result)
+      const targetText = transData?.format_result || transData?.english_text;
+      if (!targetText) {
+        throw new Error('缺失目标文本，请重新翻译');
+      }
+
+      // 使用 FormData 传输音频文件和目标文本
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('targetText', targetText);
+      
+      const res = await fetch('/api/score', {
+        method: 'POST',
+        body: formData, // 直接发送 FormData，无需手动设置 Content-Type
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `请求失败: ${res.status}`);
+      }
+      
+      setScoreData(data);
+      setState('RESULT');
     } catch (err: any) {
+      console.error('Score processing error:', err);
       setError(err.message || '评分失败');
       setState('PRACTICING');
     }

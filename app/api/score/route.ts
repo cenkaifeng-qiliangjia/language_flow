@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     // 1. 上传音频文件到 Dify 获取 file_id
     const difyFormData = new FormData();
-    difyFormData.append('file', audioFile, 'audio.webm');
+    difyFormData.append('file', audioFile, 'audio.mp3');
     difyFormData.append('user', 'demo-user');
 
     const uploadResponse = await fetch('https://api-ai.qiliangjia.org/v1/files/upload', {
@@ -31,52 +31,60 @@ export async function POST(req: Request) {
 
     const uploadData = await uploadResponse.json();
     const fileId = uploadData.id;
+    console.log('Dify uploaded fileId:', fileId);
+    console.log('Dify uploaded file:', uploadData);
 
-    // 2. 使用 file_id 运行工作流 (使用 multipart/form-data 请求)
-    const difyRunFormData = new FormData();
-    difyRunFormData.append('inputs', JSON.stringify({ 
-      audio: {
-        transfer_method: 'local_file',
-        upload_file_id: fileId,
-        type: 'audio'
+    // 2. 使用 file_id 运行工作流 (使用 JSON 请求)
+    // 根据用户提供的 Dify API 文档，如果变量是文件列表类型，需要使用数组包裹
+    const runBody = {
+      inputs: {
+        audio: 
+          {
+            transfer_method: 'local_file',
+            upload_file_id: fileId,
+            type: 'audio'
+          },
+        targetText: targetText
       },
-      target_text: targetText 
-    }));
-    difyRunFormData.append('response_mode', 'blocking');
-    difyRunFormData.append('user', 'demo-user');
+      response_mode: 'blocking',
+      user: 'demo-user'
+    };
 
     const response = await fetch('https://api-ai.qiliangjia.org/v1/workflows/run', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DIFY_SCORE_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: difyRunFormData,
+      body: JSON.stringify(runBody),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Dify run error:', errorText);
       throw new Error('Dify API response was not ok');
     }
 
     const data = await response.json();
     console.log('Dify score response:', JSON.stringify(data));
     
-    // Dify Workflow 阻塞模式通常返回 { data: { outputs: { ... } } }
-    // 根据用户反馈，现在 score 接口直接在 data.data 或 data 中返回 score, judge, proposal，不再使用 outputs
+    // Dify Workflow 阻塞模式返回结构：
+    // 根据用户要求，现在输出结构是 data: { score, judge, proposal }
     const resultContainer = data?.data || data;
     
     if (resultContainer?.score !== undefined) {
       return NextResponse.json({
-        score: resultContainer.score,
+        score: Number(resultContainer.score),
         judge: resultContainer.judge || '',
         proposal: resultContainer.proposal || ''
       });
     }
 
-    // 如果没有直接获取到，尝试检查是否还在 outputs 内部（防御性保留，但优先使用外层）
+    // 兜底逻辑：检查 outputs 内部
     const outputs = resultContainer?.outputs;
     if (outputs?.score !== undefined) {
       return NextResponse.json({
-        score: outputs.score,
+        score: Number(outputs.score),
         judge: outputs.judge || '',
         proposal: outputs.proposal || ''
       });
