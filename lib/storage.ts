@@ -7,7 +7,15 @@ export const saveHistory = (item: PracticeHistory) => {
   if (typeof window === 'undefined') return;
   
   const existing = getHistory();
-  const updated = [item, ...existing].slice(0, MAX_HISTORY);
+  // 如果 ID 已存在，则更新，否则新增
+  const index = existing.findIndex(i => i.id === item.id);
+  let updated;
+  if (index >= 0) {
+    updated = [...existing];
+    updated[index] = item;
+  } else {
+    updated = [item, ...existing].slice(0, MAX_HISTORY);
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 };
 

@@ -4,8 +4,9 @@ import TextInputPanel from '@/components/TextInputPanel';
 import TranslationResult from '@/components/TranslationResult';
 import RecorderPanel from '@/components/RecorderPanel';
 import ScorePanel from '@/components/ScorePanel';
-import { AppState, TranslationData, ScoreResponse } from '@/lib/types';
-import { saveHistory } from '@/lib/storage';
+import HistoryPanel from '@/components/HistoryPanel';
+import { AppState, TranslationData, ScoreResponse, PracticeHistory } from '@/lib/types';
+import { saveHistory, getHistory, clearHistory } from '@/lib/storage';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 
 export default function PracticePage() {
@@ -13,7 +14,13 @@ export default function PracticePage() {
   const [zhText, setZhText] = useState('');
   const [transData, setTransData] = useState<TranslationData | null>(null);
   const [scoreData, setScoreData] = useState<ScoreResponse | null>(null);
+  const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
+  const [history, setHistory] = useState<PracticeHistory[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHistory(getHistory());
+  }, [state]);
 
   const handleTranslate = async (text: string) => {
     setState('TRANSLATING');
@@ -27,13 +34,15 @@ export default function PracticePage() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       
+      const historyId = Date.now().toString();
       setZhText(text);
       setTransData(data);
+      setCurrentHistoryId(historyId);
       setState('PRACTICING');
       
       // 保存到本地历史 (初始状态)
       saveHistory({
-        id: Date.now().toString(),
+        id: historyId,
         date: new Date().toISOString(),
         zhText: text,
         translation: data
@@ -71,10 +80,40 @@ export default function PracticePage() {
       
       setScoreData(data);
       setState('RESULT');
+
+      // 更新历史记录中的分数
+      if (currentHistoryId && zhText && transData) {
+        saveHistory({
+          id: currentHistoryId,
+          date: new Date().toISOString(),
+          zhText: zhText,
+          translation: transData,
+          score: data
+        });
+      }
     } catch (err: any) {
       console.error('Score processing error:', err);
       setError(err.message || '评分失败');
       setState('PRACTICING');
+    }
+  };
+
+  const handleSelectHistory = (item: PracticeHistory) => {
+    setZhText(item.zhText);
+    setTransData(item.translation);
+    setScoreData(item.score || null);
+    setCurrentHistoryId(item.id);
+    if (item.score) {
+      setState('RESULT');
+    } else {
+      setState('PRACTICING');
+    }
+  };
+
+  const handleClearHistory = () => {
+    if (confirm('确定要清除所有练习历史吗？')) {
+      clearHistory();
+      setHistory([]);
     }
   };
 
@@ -117,6 +156,12 @@ export default function PracticePage() {
               <p className="text-gray-500 text-lg">AI 智能翻译、助记、纠音，助你从零开始流利表达</p>
             </div>
             <TextInputPanel onSubmit={handleTranslate} isLoading={state === 'TRANSLATING'} />
+            
+            <HistoryPanel 
+              history={history} 
+              onSelect={handleSelectHistory} 
+              onClear={handleClearHistory} 
+            />
           </div>
         ) : (
           <div className="grid gap-8 pb-20">
