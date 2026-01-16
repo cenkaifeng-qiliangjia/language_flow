@@ -90,54 +90,10 @@ export default function TranslationResult({ data }: { data: TranslationData }) {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg font-bold text-gray-900">参考译文</h2>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => playVoice(mainText, 0)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                    activeType === 0 
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                      : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'
-                  }`}
-                >
-                  {activeType === 0 && isPlaying ? (
-                    isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />
-                  ) : (
-                    <Volume2 size={14} />
-                  )}
-                  <span>美音</span>
-                </button>
-                <button 
-                  onClick={() => playVoice(mainText, 1)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                    activeType === 1 
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
-                      : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
-                  }`}
-                >
-                  {activeType === 1 && isPlaying ? (
-                    isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />
-                  ) : (
-                    <Volume2 size={14} />
-                  )}
-                  <span>英音</span>
-                </button>
-                {isPlaying && (
-                  <button 
-                    onClick={stopVoice}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                    title="停止播放"
-                  >
-                    <Square size={14} fill="currentColor" />
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold text-gray-900">参考译文</h2>
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                 <Gauge size={14} className="text-gray-400" />
                 <select 
@@ -146,8 +102,6 @@ export default function TranslationResult({ data }: { data: TranslationData }) {
                     const newRate = parseFloat(e.target.value);
                     setPlaybackRate(newRate);
                     if (isPlaying) {
-                      // 如果正在播放，重头以新语速开始，或者提醒用户下次生效
-                      // Web Speech API 不支持中途动态修改 rate，需要重新 speak
                       stopVoice();
                     }
                   }}
@@ -170,8 +124,50 @@ export default function TranslationResult({ data }: { data: TranslationData }) {
               </button>
             </div>
           </div>
+
+          <div className="flex items-center gap-2 pb-2">
+            <button 
+              onClick={() => playVoice(mainText, 0)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+                activeType === 0 
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                  : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'
+              }`}
+            >
+              {activeType === 0 && isPlaying ? (
+                isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />
+              ) : (
+                <Volume2 size={14} />
+              )}
+              <span>美式发音</span>
+            </button>
+            <button 
+              onClick={() => playVoice(mainText, 1)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+                activeType === 1 
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                  : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
+              }`}
+            >
+              {activeType === 1 && isPlaying ? (
+                isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />
+              ) : (
+                <Volume2 size={14} />
+              )}
+              <span>英式发音</span>
+            </button>
+            {isPlaying && (
+              <button 
+                onClick={stopVoice}
+                className="ml-1 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors border border-transparent hover:border-red-100"
+                title="停止播放"
+              >
+                <Square size={16} fill="currentColor" />
+              </button>
+            )}
+          </div>
           
-          <div className="prose prose-blue max-w-none">
+          <div className="prose prose-blue max-w-none pt-2">
             <div className="text-2xl md:text-3xl leading-relaxed text-gray-900 font-bold whitespace-pre-wrap">
               {data.format_result || data.english_text}
             </div>

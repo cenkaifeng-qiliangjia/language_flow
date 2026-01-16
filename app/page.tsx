@@ -151,7 +151,7 @@ export default function PracticePage() {
           <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="text-center space-y-2">
               <h2 className="text-4xl font-black text-gray-900 leading-tight">
-                将中文演讲稿，<br /><span className="text-blue-600">一键转化为地道口语练习</span>
+                将中文演讲稿，<br /><span className="text-blue-600">一键生成地道口语练习</span>
               </h2>
               <p className="text-gray-500 text-lg">AI 智能翻译、助记、纠音，助你从零开始流利表达</p>
             </div>
