@@ -28,8 +28,8 @@ export async function POST(req: Request) {
     const data = await response.json();
     console.log('Dify response data:', JSON.stringify(data));
     
-    // Dify Workflow 阻塞模式通常返回 { data: { outputs: { ... }, format_result: "...", ... } }
-    // 但也有可能直接返回 { outputs: { ... }, format_result: "...", ... } 或其他结构
+    // Dify Workflow 阻塞模式通常返回 { data: { outputs: { ... } } }
+    // 根据用户反馈，现在不再使用 outputs 字段，而是直接从 data 或 data.data 中获取 format_* 字段
     const resultContainer = data?.data || data;
     
     if (resultContainer?.format_result) {
@@ -44,84 +44,23 @@ export async function POST(req: Request) {
       });
     }
 
-    let outputs = resultContainer?.outputs;
-    
-    if (!outputs) {
-      // 检查是否有直接的 error 信息
-      const errorMsg = data?.error || data?.message || 'Invalid response structure from Dify';
-      console.error('Dify API Error:', data);
-      throw new Error(errorMsg);
-    }
-
-    // 如果 outputs 是字符串，或者是包含 outputs 字段的对象且该字段是字符串
-    // 这里的逻辑需要根据 Dify Workflow 的实际输出变量名来调整
-    // 如果你在 Dify 中定义了一个名为 'text' 的输出变量，那么这里应该是 outputs.text
-    
-    // 尝试获取结果字符串
-    let resultString = '';
-    if (typeof outputs === 'string') {
-      resultString = outputs;
-    } else if (typeof outputs === 'object' && outputs !== null) {
-      if (outputs.text) {
-        resultString = outputs.text;
-      } else if (outputs.outputs) {
-        resultString = outputs.outputs;
-      } else if (outputs.english_text) {
-        // 如果已经包含了预期的字段，直接返回
-        return NextResponse.json(outputs);
-      } else {
-        // 如果是一个对象但没有识别出的字段，将其序列化
-        resultString = JSON.stringify(outputs);
-      }
-    }
-
-    // 尝试解析 resultString 是否为 JSON
-    try {
-      const parsed = JSON.parse(resultString);
-      
-      // 如果解析出来已经是预期的格式，直接返回
-      if (parsed?.format_result) {
-        return NextResponse.json({
-          format_result: parsed.format_result,
-          format_helper: parsed.format_helper || '',
-          format_pron: parsed.format_pron || '',
-          english_text: parsed.format_result,
-          mnemonics: parsed.format_helper || '',
-          ipa: parsed.format_pron || ''
-        });
-      }
-
-      // 如果解析出来还是个对象，且没有 english_text，但有 outputs 或 text
-      if (parsed && typeof parsed === 'object' && !parsed.english_text) {
-        const nestedText = parsed.outputs || parsed.text;
-        if (nestedText) {
-          const text = typeof nestedText === 'string' ? nestedText : JSON.stringify(nestedText);
-          return NextResponse.json({
-            format_result: text,
-            format_helper: parsed.format_helper || parsed.mnemonics || '',
-            format_pron: parsed.format_pron || parsed.ipa || '',
-            english_text: text,
-            mnemonics: parsed.mnemonics || '',
-            ipa: parsed.ipa || '',
-            segments: parsed.segments || []
-          });
-        }
-      }
-      
-      return NextResponse.json(parsed);
-    } catch (e) {
-      // 如果不是 JSON，或者是解析出的 JSON 不是预期格式
-      // 将其包装成 TranslationData 结构返回，以便前端渲染
+    // 如果没有直接获取到 format_result，尝试检查是否还在 outputs 内部（防御性编程）
+    const outputs = resultContainer?.outputs;
+    if (outputs?.format_result) {
       return NextResponse.json({
-        format_result: resultString,
-        format_helper: '',
-        format_pron: '',
-        english_text: resultString,
-        mnemonics: '',
-        ipa: '',
-        segments: []
+        format_result: outputs.format_result,
+        format_helper: outputs.format_helper || '',
+        format_pron: outputs.format_pron || '',
+        english_text: outputs.format_result,
+        mnemonics: outputs.format_helper || '',
+        ipa: outputs.format_pron || ''
       });
     }
+
+    // 如果仍然没有，报错
+    const errorMsg = data?.error || data?.message || '未获取到 format_result 字段';
+    console.error('Dify API Error:', data);
+    throw new Error(errorMsg);
   } catch (error) {
     console.error('Translation Error:', error);
     return NextResponse.json({ error: '翻译请求失败，请检查网络或 API Key' }, { status: 500 });

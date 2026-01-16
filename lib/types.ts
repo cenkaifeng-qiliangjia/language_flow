@@ -14,12 +14,9 @@ export interface TranslationData {
 }
 
 export interface ScoreResponse {
-  overall_score: number;
-  pronunciation: number;
-  fluency: number;
-  completeness: number;
-  feedback: string;
-  suggestions: string[];
+  score: number;
+  judge: string;
+  proposal: string;
 }
 
 export type AppState = 'IDLE' | 'TRANSLATING' | 'PRACTICING' | 'SCORING' | 'RESULT';
