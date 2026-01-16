@@ -72,8 +72,8 @@ export default function RecorderPanel({ onComplete, isLoading }: RecorderPanelPr
   };
 
   return (
-    <div className="bg-blue-50/50 rounded-2xl border-2 border-dashed border-blue-200 p-8">
-      <div className="flex flex-col items-center gap-6">
+    <div className="bg-white rounded-3xl border border-blue-100 p-6 md:p-8">
+      <div className="flex flex-col items-center gap-4 md:gap-6">
         {!audioUrl && !isRecording && (
           <button
             onClick={startRecording}

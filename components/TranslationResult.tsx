@@ -1,38 +1,184 @@
 'use client';
+'use client';
+import { useState, useEffect, useRef } from 'react';
 import { TranslationData } from '@/lib/types';
-import { Copy, Volume2 } from 'lucide-react';
+import { Copy, Volume2, Play, Pause, Square, Gauge } from 'lucide-react';
 
 export default function TranslationResult({ data }: { data: TranslationData }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(0.9);
+  const [activeType, setActiveType] = useState<0 | 1 | null>(null);
+  
+  const mainText = data.format_result || data.english_text || '';
+
+  // 监听播放结束
+  useEffect(() => {
+    const handleEnd = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+      setActiveType(null);
+    };
+
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel(); // 初始停止
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const playVoice = (text: string, type: 0 | 1) => {
+    if (!text) return;
+
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      // 如果正在播放且类型相同，则切换暂停/继续
+      if (isPlaying && activeType === type) {
+        if (isPaused) {
+          window.speechSynthesis.resume();
+          setIsPaused(false);
+        } else {
+          window.speechSynthesis.pause();
+          setIsPaused(true);
+        }
+        return;
+      }
+
+      // 否则开始新的播放
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = type === 0 ? 'en-US' : 'en-GB';
+      utterance.rate = playbackRate;
+      utterance.pitch = 1;
+
+      utterance.onend = () => {
+        setIsPlaying(false);
+        setIsPaused(false);
+        setActiveType(null);
+      };
+
+      utterance.onerror = () => {
+        setIsPlaying(false);
+        setIsPaused(false);
+        setActiveType(null);
+      };
+
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+      setIsPaused(false);
+      setActiveType(type);
+    }
+  };
+
+  const stopVoice = () => {
+    if (typeof window !== 'undefined') {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+      setIsPaused(false);
+      setActiveType(null);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // 这里可以加一个 toast 提示
   };
 
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-lg font-bold text-gray-900">参考译文</h2>
-          <button 
-            onClick={() => copyToClipboard(data.format_result || data.english_text || '')}
-            className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
-            title="复制全文"
-          >
-            <Copy size={18} />
-          </button>
-        </div>
-        
-        <div className="prose prose-blue max-w-none">
-          <div className="text-2xl md:text-3xl leading-relaxed text-gray-900 font-bold whitespace-pre-wrap">
-            {data.format_result || data.english_text}
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-900">参考译文</h2>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                <Gauge size={14} className="text-gray-400" />
+                <select 
+                  value={playbackRate} 
+                  onChange={(e) => {
+                    const newRate = parseFloat(e.target.value);
+                    setPlaybackRate(newRate);
+                    if (isPlaying) {
+                      stopVoice();
+                    }
+                  }}
+                  className="bg-transparent text-xs font-medium text-gray-600 outline-none cursor-pointer"
+                >
+                  <option value="0.5">0.5x 极慢</option>
+                  <option value="0.7">0.7x 慢速</option>
+                  <option value="0.8">0.8x 较慢</option>
+                  <option value="0.9">0.9x 标准</option>
+                  <option value="1.0">1.0x 常速</option>
+                  <option value="1.2">1.2x 快速</option>
+                </select>
+              </div>
+              <button 
+                onClick={() => copyToClipboard(mainText)}
+                className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
+                title="复制全文"
+              >
+                <Copy size={18} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {(data.format_pron || data.ipa) && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-blue-700 font-mono text-xs md:text-sm">
-            发音辅助: {data.format_pron || data.ipa}
+          <div className="flex items-center gap-2 pb-2">
+            <button 
+              onClick={() => playVoice(mainText, 0)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+                activeType === 0 
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                  : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'
+              }`}
+            >
+              {activeType === 0 && isPlaying ? (
+                isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />
+              ) : (
+                <Volume2 size={14} />
+              )}
+              <span>美式发音</span>
+            </button>
+            <button 
+              onClick={() => playVoice(mainText, 1)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+                activeType === 1 
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                  : 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
+              }`}
+            >
+              {activeType === 1 && isPlaying ? (
+                isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />
+              ) : (
+                <Volume2 size={14} />
+              )}
+              <span>英式发音</span>
+            </button>
+            {isPlaying && (
+              <button 
+                onClick={stopVoice}
+                className="ml-1 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors border border-transparent hover:border-red-100"
+                title="停止播放"
+              >
+                <Square size={16} fill="currentColor" />
+              </button>
+            )}
           </div>
-        )}
+          
+          <div className="prose prose-blue max-w-none pt-2">
+            <div className="text-2xl md:text-3xl leading-relaxed text-gray-900 font-bold whitespace-pre-wrap">
+              {data.format_result || data.english_text}
+            </div>
+          </div>
+
+          {(data.format_pron || data.ipa) && (
+            <div className="mt-2 p-3 bg-blue-50 rounded-lg text-blue-700 font-mono text-xs md:text-sm border border-blue-100/50">
+              发音辅助: {data.format_pron || data.ipa}
+            </div>
+          )}
+        </div>
       </div>
 
       {(data.format_helper || data.mnemonics) && (
@@ -55,9 +201,17 @@ export default function TranslationResult({ data }: { data: TranslationData }) {
                   <p className="text-lg text-gray-900 font-medium">{seg.en}</p>
                   {seg.ipa && <p className="text-sm text-blue-500 font-mono">{seg.ipa}</p>}
                 </div>
-                <button className="opacity-0 group-hover:opacity-100 p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-all">
-                  <Volume2 size={16} />
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => playVoice(seg.en, 0)}
+                    className={`p-2 rounded-lg transition-all ${
+                      activeType === 0 && isPlaying && !isPaused ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50 text-blue-400 hover:text-blue-600'
+                    }`}
+                    title="播放"
+                  >
+                    {activeType === 0 && isPlaying && !isPaused ? <Pause size={16} /> : <Volume2 size={16} />}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
