@@ -14,7 +14,7 @@ export default function TranslationResult({ data }: { data: TranslationData }) {
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-lg font-bold text-gray-900">参考译文</h2>
           <button 
-            onClick={() => copyToClipboard(data.english_text)}
+            onClick={() => copyToClipboard(data.format_result || data.english_text || '')}
             className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
             title="复制全文"
           >
@@ -23,23 +23,23 @@ export default function TranslationResult({ data }: { data: TranslationData }) {
         </div>
         
         <div className="prose prose-blue max-w-none">
-          <div className="text-xl leading-relaxed text-gray-800 font-medium whitespace-pre-wrap">
-            {data.english_text}
+          <div className="text-2xl md:text-3xl leading-relaxed text-gray-900 font-bold whitespace-pre-wrap">
+            {data.format_result || data.english_text}
           </div>
         </div>
 
-        {data.ipa && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-blue-700 font-mono text-sm">
-            IPA: {data.ipa}
+        {(data.format_pron || data.ipa) && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-blue-700 font-mono text-xs md:text-sm">
+            发音辅助: {data.format_pron || data.ipa}
           </div>
         )}
       </div>
 
-      {data.mnemonics && (
+      {(data.format_helper || data.mnemonics) && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">助记提示</h3>
-          <p className="text-gray-700 leading-relaxed italic">
-            {data.mnemonics}
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">助记提示</h3>
+          <p className="text-gray-600 leading-relaxed italic text-sm md:text-base">
+            {data.format_helper || data.mnemonics}
           </p>
         </div>
       )}

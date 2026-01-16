@@ -1,8 +1,12 @@
 export interface TranslationData {
-  english_text: string;
-  mnemonics: string;
-  ipa: string;
-  segments: {
+  format_result: string;
+  format_helper: string;
+  format_pron: string;
+  // 以下为旧字段，保留兼容性
+  english_text?: string;
+  mnemonics?: string;
+  ipa?: string;
+  segments?: {
     en: string;
     zh: string;
     ipa: string;

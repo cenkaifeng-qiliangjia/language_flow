@@ -59,7 +59,7 @@ export default function PracticePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             audio: base64Audio,
-            targetText: transData?.english_text 
+            targetText: transData?.format_result || transData?.english_text 
           }),
         });
         

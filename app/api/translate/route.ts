@@ -28,9 +28,23 @@ export async function POST(req: Request) {
     const data = await response.json();
     console.log('Dify response data:', JSON.stringify(data));
     
-    // Dify Workflow 阻塞模式通常返回 { data: { outputs: { ... } } }
-    // 但也有可能直接返回 { outputs: { ... } } 或其他结构
-    let outputs = data?.data?.outputs || data?.outputs;
+    // Dify Workflow 阻塞模式通常返回 { data: { outputs: { ... }, format_result: "...", ... } }
+    // 但也有可能直接返回 { outputs: { ... }, format_result: "...", ... } 或其他结构
+    const resultContainer = data?.data || data;
+    
+    if (resultContainer?.format_result) {
+      return NextResponse.json({
+        format_result: resultContainer.format_result,
+        format_helper: resultContainer.format_helper || '',
+        format_pron: resultContainer.format_pron || '',
+        // 兼容旧字段
+        english_text: resultContainer.format_result,
+        mnemonics: resultContainer.format_helper || '',
+        ipa: resultContainer.format_pron || ''
+      });
+    }
+
+    let outputs = resultContainer?.outputs;
     
     if (!outputs) {
       // 检查是否有直接的 error 信息
@@ -65,12 +79,28 @@ export async function POST(req: Request) {
     try {
       const parsed = JSON.parse(resultString);
       
+      // 如果解析出来已经是预期的格式，直接返回
+      if (parsed?.format_result) {
+        return NextResponse.json({
+          format_result: parsed.format_result,
+          format_helper: parsed.format_helper || '',
+          format_pron: parsed.format_pron || '',
+          english_text: parsed.format_result,
+          mnemonics: parsed.format_helper || '',
+          ipa: parsed.format_pron || ''
+        });
+      }
+
       // 如果解析出来还是个对象，且没有 english_text，但有 outputs 或 text
       if (parsed && typeof parsed === 'object' && !parsed.english_text) {
         const nestedText = parsed.outputs || parsed.text;
         if (nestedText) {
+          const text = typeof nestedText === 'string' ? nestedText : JSON.stringify(nestedText);
           return NextResponse.json({
-            english_text: typeof nestedText === 'string' ? nestedText : JSON.stringify(nestedText),
+            format_result: text,
+            format_helper: parsed.format_helper || parsed.mnemonics || '',
+            format_pron: parsed.format_pron || parsed.ipa || '',
+            english_text: text,
             mnemonics: parsed.mnemonics || '',
             ipa: parsed.ipa || '',
             segments: parsed.segments || []
@@ -83,6 +113,9 @@ export async function POST(req: Request) {
       // 如果不是 JSON，或者是解析出的 JSON 不是预期格式
       // 将其包装成 TranslationData 结构返回，以便前端渲染
       return NextResponse.json({
+        format_result: resultString,
+        format_helper: '',
+        format_pron: '',
         english_text: resultString,
         mnemonics: '',
         ipa: '',
