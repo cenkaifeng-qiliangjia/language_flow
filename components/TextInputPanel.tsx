@@ -27,7 +27,7 @@ export default function TextInputPanel({ onSubmit, isLoading }: TextInputPanelPr
           <textarea
             id="zh-input"
             rows={8}
-            className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none text-gray-900"
+            className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none text-gray-900"
             placeholder="在这里输入或粘贴您想要练习的中文演讲稿..."
             value={text}
             onChange={(e) => setText(e.target.value)}

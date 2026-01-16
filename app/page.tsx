@@ -164,7 +164,7 @@ export default function PracticePage() {
             />
           </div>
         ) : (
-          <div className="grid gap-8 pb-20">
+          <div className={`grid gap-8 ${state === 'PRACTICING' ? 'pb-80' : 'pb-20'}`}>
             {transData && (
               <>
                 <div className="animate-in fade-in duration-500">
@@ -172,9 +172,21 @@ export default function PracticePage() {
                 </div>
                 
                 {state === 'PRACTICING' && (
-                  <div className="animate-in slide-in-from-bottom-6 duration-500">
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 text-center">开始练习吧</h3>
-                    <RecorderPanel onComplete={handleScore} isLoading={false} />
+                  <div className="fixed bottom-0 left-0 right-0 z-20 p-4 md:p-8 bg-gradient-to-t from-[#F8FAFC] via-[#F8FAFC]/95 to-transparent pt-16">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="animate-in slide-in-from-bottom-10 duration-700 ease-out">
+                        <div className="relative group">
+                          <div className="absolute -top-10 left-0 right-0 flex justify-center">
+                            <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold tracking-widest shadow-lg uppercase">
+                              准备好后开始练习
+                            </div>
+                          </div>
+                          <div className="shadow-2xl shadow-blue-200/50 rounded-3xl overflow-hidden border border-white/50 backdrop-blur-sm">
+                            <RecorderPanel onComplete={handleScore} isLoading={false} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
